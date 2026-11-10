@@ -1,6 +1,7 @@
 {
   "name": "omnisnap-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
+  "mcpName": "io.github.developerpagadi/omnisnap",
   "description": "MCP server for OmniSnap AI Studio. Gives AI agents stability-scored test selectors, design tokens, visual captures and QA diagnostics from your real, logged-in browser session.",
   "type": "module",
   "bin": {

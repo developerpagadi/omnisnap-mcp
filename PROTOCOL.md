@@ -19,8 +19,8 @@ Two gates, in order.
 **Origin.** The server reads the `Origin` header on the upgrade request and
 accepts only `chrome-extension://…`, `moz-extension://…` or
 `safari-web-extension://…`. A browser sets this header itself and page
-JavaScript cannot override it, so **no web page can open this socket at all** —
-not a site the user is visiting, not an iframe inside one. A client that sends
+JavaScript cannot override it, so **no web page can open this socket at all**:
+not a site the user is visiting, and not an iframe inside one. A client that sends
 no Origin (a CLI, the test harness) is allowed through to the second gate.
 
 **Token.** Every connection must pair or present a token. Until it does, only
@@ -42,8 +42,8 @@ So the code takes a route the socket cannot reach:
 
 A rogue listener on the port can issue a code of its own, but it cannot learn
 the one the user's real AI client displayed, and that is the one the user
-types. Carrying the code by hand is the entire defence — which is why it is
-six readable digits and not a hash.
+types. Carrying the code by hand is the whole defence, which is why it is six
+readable digits rather than a hash.
 
 **The server never sends the code over this socket.** If it did, whatever had
 claimed the port could read it back and pair itself with no human involved.
@@ -107,7 +107,7 @@ happened and what would fix it.
 
 ## Liveness
 
-The server pings every 20 s. A connection that misses one is terminated — a
+The server pings every 20 s. A connection that misses one is terminated, a
 half-open socket looks connected and answers nothing, which otherwise turns
 into a caller waiting out its full timeout.
 

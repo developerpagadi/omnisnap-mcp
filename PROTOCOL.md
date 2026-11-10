@@ -33,20 +33,22 @@ to claim 8787 is the one the extension will find. Without a human in the loop,
 any local process could stand up a listener and inherit the ability to
 screenshot and read every page the user is signed in to.
 
-So pairing requires comparing two numbers that travelled by **different
-routes**:
+So the code takes a route the socket cannot reach:
 
-- the server tells the **AI client** the code, which relays it to the user;
-- the extension shows the user **its own** code in its UI.
+- the server issues the code and reports it to the **AI client**, which shows
+  it to the user;
+- the user reads it there and **types it into the extension**;
+- the extension sends it back here, where it is compared with the original.
 
-A rogue server can generate a code, but it cannot make the user's AI client
-report that same code, because it is not the server the client launched. The
-user comparing them is the entire defence — which is why the code is six
-digits and readable, not a hash.
+A rogue listener on the port can issue a code of its own, but it cannot learn
+the one the user's real AI client displayed, and that is the one the user
+types. Carrying the code by hand is the entire defence — which is why it is
+six readable digits and not a hash.
 
-**The server never sends the code over this socket.** If it did, a rogue
-client could read it back and pair itself with no human involved.
-`tests/bridge.test.js` asserts this.
+**The server never sends the code over this socket.** If it did, whatever had
+claimed the port could read it back and pair itself with no human involved.
+`tests/bridge.test.js` asserts this, and `tests/extension.test.js` asserts
+that the shipped extension never invents a code of its own.
 
 A code is single-use, expires after two minutes, and allows five attempts.
 Once the budget is spent even the correct code is refused, so interleaving a
@@ -59,7 +61,7 @@ ext → srv   { "v":1, "type":"hello", "client":"omnisnap-extension", "version":
 srv → ext   { "v":1, "type":"pair-required", "ttlMs":120000 }
 ```
 
-The extension shows its code and waits for the user to approve.
+The extension asks the user for the code their AI client is showing.
 
 ```
 ext → srv   { "v":1, "type":"pair-approve", "code":"482193" }

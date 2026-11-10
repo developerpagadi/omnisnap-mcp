@@ -192,7 +192,7 @@ export function createServer() {
         {
           uri: uri.href,
           mimeType: 'text/markdown',
-          text: `# Pairing OmniSnap\n\n1. Install the extension: ${STORE_URL}\n2. Click the OmniSnap icon, then **Connect to AI**.\n3. Approve the pairing code it shows.\n\nThe bridge listens on ${config.host}:${config.port}.\n`,
+          text: `# Pairing OmniSnap\n\n1. Install the extension: ${STORE_URL}\n2. Click the OmniSnap icon, then turn on **Connect to AI**.\n3. Call \`omnisnap_status\` for the six-digit code, and type it into the\n   extension when it asks.\n\nThe code travels from this server to you and from you to the user. If the\nextension already shows a code of its own, something else is listening on the\nbridge port and pairing should not continue.\n\nThe bridge listens on ${config.host}:${config.port}.\n`,
         },
       ],
     })

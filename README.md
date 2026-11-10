@@ -48,9 +48,9 @@ hands back artefacts.
 Claude Desktop: `~/Library/Application Support/Claude/claude_desktop_config.json`.
 Cursor: `~/.cursor/mcp.json`. Claude Code: `claude mcp add omnisnap -- npx -y omnisnap-mcp`.
 
-Then install the [extension][store], click its icon, choose **Connect to AI**,
-and approve the pairing code. Once. Ask your agent to call `omnisnap_status`
-to confirm.
+Then install the [extension][store], click its icon and turn on **Connect to
+AI**. Ask your agent to call `omnisnap_status`: it reports a six-digit code.
+Type that code into the extension. Once, and you are paired for good.
 
 ## Tools
 
@@ -104,10 +104,11 @@ deserves a straight answer about what stops it being abused.
   origin, and a browser sets that header itself — page JavaScript cannot forge
   it.
 - **Pairing needs a human.** The bridge is on a fixed port, so a local process
-  could race to claim it. Pairing therefore requires you to compare the code
-  your AI client reports against the one the extension shows. A rogue server
-  can produce a code but cannot make your AI client report it. **If the two
-  codes differ, do not approve — something else is listening.**
+  could race to claim it. Pairing therefore requires you to read a six-digit
+  code from your AI client and type it into the extension. A rogue server can
+  issue a code, but it cannot make your AI client show you that code. **If
+  your client is not showing one, do not type anything — something else is
+  listening on the port.**
 - **The code never crosses the socket.** Otherwise a rogue client would read
   it back and pair itself. A test asserts this.
 - **Rate limited and short lived.** Six digits, five attempts, two minutes,
@@ -143,8 +144,13 @@ npm install
 npm test
 ```
 
-28 tests: pairing and its failure modes, origin rejection, the bridge end to
+35 tests: pairing and its failure modes, origin rejection, the bridge end to
 end against a fake extension, and the stdio contract.
+
+`tests/extension.test.js` goes further and runs the Chrome extension's own
+bridge module, unmodified, against a real server, so the two halves cannot
+drift apart unnoticed. It skips unless the extension is checked out beside
+this repository.
 
 ## Licence
 

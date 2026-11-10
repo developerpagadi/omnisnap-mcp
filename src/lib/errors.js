@@ -28,8 +28,9 @@ export const NOT_PAIRED = [
   '',
   'Ask the user to do this once:',
   `  1. Install OmniSnap AI Studio: ${STORE_URL}`,
-  '  2. Click the OmniSnap toolbar icon, then "Connect to AI".',
-  '  3. Approve the pairing code the extension shows.',
+  '  2. Click the OmniSnap toolbar icon, then turn on "Connect to AI".',
+  '  3. Call omnisnap_status again for the pairing code, and have them type',
+  '     it into the extension.',
   '',
   'Then call omnisnap_status to confirm, and retry.',
 ].join('\n');
@@ -38,10 +39,12 @@ export const PAIRING_PENDING = (code) =>
   [
     'The extension is waiting to be paired.',
     '',
-    `Tell the user: the extension should be showing the code ${code}.`,
-    'Ask them to check it matches and approve it in the extension.',
-    'If the code shown is different, something else is listening on the',
-    'bridge port and they should not approve it.',
+    `Tell the user the code is ${code}, and ask them to type it into the`,
+    'extension, which is asking for it now.',
+    '',
+    'The code must reach them from you and from nowhere else. If the',
+    'extension claims to already know it, something else is listening on',
+    'the bridge port and they should not continue.',
     '',
     'Then retry.',
   ].join('\n');

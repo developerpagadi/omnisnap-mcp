@@ -1,0 +1,57 @@
+{
+  "name": "omnisnap-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for OmniSnap AI Studio. Gives AI agents stability-scored test selectors, design tokens, visual captures and QA diagnostics from your real, logged-in browser session.",
+  "type": "module",
+  "bin": {
+    "omnisnap-mcp": "src/index.js"
+  },
+  "main": "src/index.js",
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "PROTOCOL.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "author": "developerpagadi",
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "mcp-server",
+    "claude",
+    "cursor",
+    "chrome-extension",
+    "selectors",
+    "xpath",
+    "playwright",
+    "selenium",
+    "cypress",
+    "testing",
+    "qa",
+    "page-object",
+    "design-tokens",
+    "screenshot",
+    "accessibility"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/developerpagadi/omnisnap-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/developerpagadi/omnisnap-mcp/issues"
+  },
+  "homepage": "https://omnisnap-ai-studio.netlify.app",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "ws": "^8.18.0",
+    "zod": "^3.25.0"
+  }
+}

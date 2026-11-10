@@ -1,0 +1,179 @@
+/**
+ * Stdout belongs to the protocol.
+ *
+ * This server speaks MCP over stdio, so one stray `console.log` anywhere in
+ * the codebase writes a non-JSON-RPC line into the stream and the client's
+ * parser gives up with an error that points nowhere near the cause. It is the
+ * single most common way a stdio MCP server gets built wrong, and it is
+ * invisible in development because nothing logs until something goes wrong.
+ *
+ * src/lib/logger.js explains why a runtime guard cannot work. This is the
+ * check that replaces it: spawn the real binary, speak real JSON-RPC to it,
+ * and assert every line it emits parses.
+ */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+/** Runs the server, sends frames, returns everything it said on both streams. */
+function session(frames, { env = {}, settleMs = 1500 } = {}) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [join(ROOT, 'src', 'index.js')], {
+      env: {
+        ...process.env,
+        OMNISNAP_LOG_LEVEL: 'debug',
+        // A port of its own, so a developer's running server cannot make the
+        // suite fail, and two test files cannot collide.
+        OMNISNAP_PORT: String(18800 + Math.floor(Math.random() * 400)),
+        OMNISNAP_STATE_DIR: join(ROOT, 'tests', '.tmp-state'),
+        ...env,
+      },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (d) => (stdout += d.toString()));
+    child.stderr.on('data', (d) => (stderr += d.toString()));
+
+    for (const frame of frames) child.stdin.write(`${JSON.stringify(frame)}\n`);
+
+    setTimeout(() => {
+      child.kill('SIGTERM');
+      setTimeout(() => resolve({ stdout, stderr }), 250);
+    }, settleMs);
+  });
+}
+
+const INITIALIZE = {
+  jsonrpc: '2.0',
+  id: 1,
+  method: 'initialize',
+  params: {
+    protocolVersion: '2025-06-18',
+    capabilities: {},
+    clientInfo: { name: 'test', version: '0' },
+  },
+};
+
+test('every line on stdout is valid JSON-RPC', async () => {
+  const { stdout } = await session([INITIALIZE, { jsonrpc: '2.0', id: 2, method: 'tools/list' }]);
+  const lines = stdout.split('\n').filter((l) => l.trim());
+
+  assert.ok(lines.length > 0, 'the server said nothing on stdout');
+
+  for (const line of lines) {
+    let parsed;
+    assert.doesNotThrow(() => {
+      parsed = JSON.parse(line);
+    }, `non-JSON on stdout, which corrupts the protocol: ${line.slice(0, 120)}`);
+    assert.equal(parsed.jsonrpc, '2.0', `line was JSON but not JSON-RPC: ${line.slice(0, 120)}`);
+  }
+});
+
+test('logging goes to stderr, where it cannot corrupt anything', async () => {
+  const { stderr } = await session([INITIALIZE]);
+  assert.match(stderr, /omnisnap-mcp ready/, 'expected the startup line on stderr');
+
+  for (const line of stderr.split('\n').filter((l) => l.trim())) {
+    assert.doesNotThrow(() => JSON.parse(line), `log line was not structured JSON: ${line.slice(0, 80)}`);
+  }
+});
+
+test('the server answers initialize and advertises what it has', async () => {
+  const { stdout } = await session([INITIALIZE]);
+  const reply = stdout
+    .split('\n')
+    .filter((l) => l.trim())
+    .map((l) => JSON.parse(l))
+    .find((m) => m.id === 1);
+
+  assert.ok(reply, 'no reply to initialize');
+  assert.equal(reply.result.serverInfo.name, 'omnisnap');
+  assert.ok(reply.result.capabilities.tools, 'tools were not advertised');
+  assert.ok(reply.result.capabilities.resources, 'resources were not advertised');
+  assert.ok(reply.result.capabilities.prompts, 'prompts were not advertised');
+  assert.match(reply.result.instructions, /logged-in browser/);
+});
+
+test('the whole tool surface is reachable and documented', async () => {
+  const { stdout } = await session([INITIALIZE, { jsonrpc: '2.0', id: 2, method: 'tools/list' }]);
+  const reply = stdout
+    .split('\n')
+    .filter((l) => l.trim())
+    .map((l) => JSON.parse(l))
+    .find((m) => m.id === 2);
+
+  assert.ok(reply, 'no reply to tools/list');
+  const names = reply.result.tools.map((t) => t.name);
+
+  for (const expected of [
+    'omnisnap_status',
+    'capture_page',
+    'annotate_interactive',
+    'collect_selectors',
+    'get_page_object',
+    'verify_selectors',
+    'get_diagnostics',
+    'get_design_tokens',
+    'measure_accessibility',
+  ]) {
+    assert.ok(names.includes(expected), `${expected} was missing from tools/list`);
+  }
+
+  // A model chooses a tool by reading its description. A thin one is a bug.
+  for (const tool of reply.result.tools) {
+    assert.ok(
+      tool.description && tool.description.length > 60,
+      `${tool.name} needs a description a model can choose from`
+    );
+  }
+});
+
+test('an unpaired status call returns the remedy, not a stack trace', async () => {
+  const { stdout } = await session([
+    INITIALIZE,
+    { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'omnisnap_status', arguments: {} } },
+  ]);
+
+  const reply = stdout
+    .split('\n')
+    .filter((l) => l.trim())
+    .map((l) => JSON.parse(l))
+    .find((m) => m.id === 2);
+
+  assert.ok(reply, 'no reply to the status call');
+  const body = JSON.stringify(reply.result);
+  assert.match(body, /not connected|not paired/i);
+  assert.match(body, /chromewebstore\.google\.com/, 'the reply must carry the install link');
+  assert.doesNotMatch(body, /at .*\.js:\d+/, 'a stack trace reached the model');
+});
+
+test('a port already in use is explained rather than fatal', async () => {
+  // Two servers, same port: the second must still start and say why.
+  const port = String(19500 + Math.floor(Math.random() * 200));
+  const first = spawn(process.execPath, [join(ROOT, 'src', 'index.js')], {
+    env: { ...process.env, OMNISNAP_PORT: port, OMNISNAP_LOG_LEVEL: 'silent' },
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  await new Promise((r) => setTimeout(r, 700));
+
+  const { stdout } = await session(
+    [INITIALIZE, { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'omnisnap_status', arguments: {} } }],
+    { env: { OMNISNAP_PORT: port } }
+  );
+  first.kill('SIGTERM');
+
+  const reply = stdout
+    .split('\n')
+    .filter((l) => l.trim())
+    .map((l) => JSON.parse(l))
+    .find((m) => m.id === 2);
+
+  assert.ok(reply, 'the second server did not answer at all');
+  assert.match(JSON.stringify(reply.result), /already listening|in use/i);
+});

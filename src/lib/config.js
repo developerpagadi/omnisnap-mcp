@@ -1,0 +1,80 @@
+/**
+ * Configuration and on-disk state.
+ *
+ * Everything is local. There is no account, no remote config and no
+ * telemetry, which is the same promise the extension makes and the reason
+ * people are willing to pair a tool that can read their logged-in pages.
+ */
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync, chmodSync } from 'node:fs';
+import { log } from './logger.js';
+
+const num = (value, fallback) => {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+export const config = {
+  /**
+   * Fixed by default because the extension has to find it without being told.
+   * A browser extension cannot read a file to discover a random port, so the
+   * port is the rendezvous. Override only if something else owns 8787.
+   */
+  port: num(process.env.OMNISNAP_PORT, 8787),
+
+  /**
+   * Loopback, always. Binding to 0.0.0.0 would put a socket that can drive
+   * someone's authenticated browser on their local network.
+   */
+  host: '127.0.0.1',
+
+  /** How long a single tool call may take before the caller gets an error. */
+  callTimeoutMs: num(process.env.OMNISNAP_CALL_TIMEOUT_MS, 30_000),
+
+  /** A capture of a tall page is slow; it gets its own, longer budget. */
+  captureTimeoutMs: num(process.env.OMNISNAP_CAPTURE_TIMEOUT_MS, 120_000),
+
+  /** Pairing codes expire quickly: a stale one is a window for mischief. */
+  pairingTtlMs: num(process.env.OMNISNAP_PAIRING_TTL_MS, 120_000),
+
+  /** Images are base64 in the response; past this they are a liability. */
+  maxImageBytes: num(process.env.OMNISNAP_MAX_IMAGE_BYTES, 8 * 1024 * 1024),
+
+  /** Any single frame from the extension. Bounds memory on a hostile client. */
+  maxFrameBytes: num(process.env.OMNISNAP_MAX_FRAME_BYTES, 24 * 1024 * 1024),
+
+  stateDir: process.env.OMNISNAP_STATE_DIR || join(homedir(), '.omnisnap'),
+};
+
+const statePath = () => join(config.stateDir, 'bridge.json');
+
+/**
+ * The paired token lives here. It is the one secret in the system: whoever
+ * holds it can ask the extension to act. The file is written 0600 so it is
+ * not readable by other accounts on a shared machine.
+ */
+export function readState() {
+  try {
+    const raw = readFileSync(statePath(), 'utf8');
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export function writeState(next) {
+  try {
+    mkdirSync(config.stateDir, { recursive: true, mode: 0o700 });
+    const file = statePath();
+    writeFileSync(file, JSON.stringify(next, null, 2), { mode: 0o600 });
+    chmodSync(file, 0o600);
+    return true;
+  } catch (error) {
+    // Losing the token costs one re-pair; failing the call would cost the
+    // session. Degrade rather than throw.
+    log.warn('could not persist bridge state', { error: String(error && error.message) });
+    return false;
+  }
+}

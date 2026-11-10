@@ -335,6 +335,15 @@ export class Bridge extends EventEmitter {
       );
     }
 
+    if (this.calls.size >= config.maxConcurrentCalls) {
+      throw new BridgeError(
+        'TOO_MANY_CALLS',
+        `${this.calls.size} calls are already in flight and the browser answers them more or ` +
+          'less one at a time. Wait for the ones you have before sending more; issuing them ' +
+          'together does not make them faster, it makes the last ones time out.'
+      );
+    }
+
     const budget =
       timeoutMs || (tool.startsWith('capture') ? config.captureTimeoutMs : config.callTimeoutMs);
     const { id, promise } = this.calls.open(budget, tool);

@@ -1,6 +1,6 @@
 {
   "name": "omnisnap-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for OmniSnap AI Studio. Gives AI agents stability-scored test selectors, design tokens, visual captures and QA diagnostics from your real, logged-in browser session.",
   "type": "module",
   "bin": {
@@ -39,12 +39,8 @@
     "screenshot",
     "accessibility"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/developerpagadi/omnisnap-mcp.git"
-  },
   "bugs": {
-    "url": "https://github.com/developerpagadi/omnisnap-mcp/issues"
+    "url": "https://omnisnap.metago.in/support.html"
   },
   "homepage": "https://omnisnap.metago.in",
   "scripts": {

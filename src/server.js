@@ -12,13 +12,24 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { TOOLS } from './tools/index.js';
+import { readFileSync } from 'node:fs';
 import { Bridge } from './bridge/ws.js';
 import { config } from './lib/config.js';
 import { log } from './lib/logger.js';
 import { BridgeError, NOT_PAIRED, PAIRING_PENDING, toToolError, STORE_URL } from './lib/errors.js';
 import { SELECTOR_GUIDE, DIAGNOSTICS_GUIDE } from './guides.js';
 
-export const VERSION = '0.1.0';
+/**
+ * Read from package.json rather than written here.
+ *
+ * A second copy of the version drifts the first time someone bumps one and
+ * not the other, and the symptom is a server that reports an old version to
+ * every client it ever talks to — which looks like a stale install and sends
+ * people to reinstall something that was already current.
+ */
+export const VERSION = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8')
+).version;
 
 /**
  * Every failure a tool can have, turned into something an agent can act on.

@@ -14,6 +14,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -247,4 +248,71 @@ test('a port already in use is explained rather than fatal', async () => {
 
   assert.ok(reply, 'the second server did not answer at all');
   assert.match(JSON.stringify(reply.result), /already listening|in use/i);
+});
+
+test('the version it reports is the version it is', async () => {
+  const declared = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
+
+  const { stdout } = await session([INITIALIZE]);
+  const initialised = stdout
+    .split('\n')
+    .filter((l) => l.trim())
+    .map((l) => JSON.parse(l))
+    .find((m) => m.id === 1);
+
+  // Two copies of a version drift the first time one is bumped and not the
+  // other, and the symptom is a server telling every client it is older than
+  // it is — which reads as a stale install nobody can fix by reinstalling.
+  assert.equal(
+    initialised.result.serverInfo.version,
+    declared,
+    'the version advertised over the protocol must match package.json'
+  );
+});
+
+test('options can be given as flags, as environment, or left alone', async () => {
+  const read = async (args, env) => {
+    // A real script, started the way a client starts the server. With `-e`
+    // there is no script path, so node claims `--port` as its own option and
+    // the test proves nothing about how anyone actually runs this.
+    const probe = spawn(process.execPath, [join(ROOT, 'tests', 'config-probe.js'), ...args], {
+      cwd: ROOT,
+      env: { ...process.env, ...env },
+    });
+    let out = '';
+    let err = '';
+    probe.stdout.on('data', (d) => (out += d));
+    probe.stderr.on('data', (d) => (err += d));
+    // 'close', not 'exit': exit fires when the process ends, close when its
+    // pipes have drained, and the answer is on a pipe.
+    await new Promise((resolve) => probe.on('close', resolve));
+    assert.ok(out, `the probe printed nothing. stderr: ${err.slice(0, 300)}`);
+    return JSON.parse(out);
+  };
+
+  const plain = await read([], {});
+  assert.equal(plain.port, 8787, 'the default stands when nothing is given');
+  assert.equal(plain.maxConcurrentCalls, 6);
+
+  /* Both forms, because people write both and a config file that silently
+     ignores half of what you put in it is worse than one that has no
+     options at all. */
+  const spaced = await read(['--port', '9001'], {});
+  assert.equal(spaced.port, 9001, '--port 9001');
+
+  const equals = await read(['--port=9002'], {});
+  assert.equal(equals.port, 9002, '--port=9002');
+
+  const fromEnv = await read([], { OMNISNAP_PORT: '9003' });
+  assert.equal(fromEnv.port, 9003, 'OMNISNAP_PORT=9003');
+
+  /* A flag is the more deliberate of the two: it is in the client config in
+     front of you, where the environment may have come from a shell profile
+     written months ago. */
+  const both = await read(['--port=9004'], { OMNISNAP_PORT: '9005' });
+  assert.equal(both.port, 9004, 'a flag wins over the environment');
+
+  const limits = await read(['--max-concurrent-calls=2', '--call-timeout=5000'], {});
+  assert.equal(limits.maxConcurrentCalls, 2);
+  assert.equal(limits.callTimeoutMs, 5000);
 });

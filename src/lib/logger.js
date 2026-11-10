@@ -14,10 +14,12 @@
  * session. A test asserts the guard actually fires.
  */
 
+import { read } from './args.js';
+
 const LEVELS = { silent: 0, error: 1, warn: 2, info: 3, debug: 4 };
 
 function resolveLevel() {
-  const raw = String(process.env.OMNISNAP_LOG_LEVEL || 'info').toLowerCase();
+  const raw = String(read('log-level', 'OMNISNAP_LOG_LEVEL') || 'info').toLowerCase();
   return Object.prototype.hasOwnProperty.call(LEVELS, raw) ? LEVELS[raw] : LEVELS.info;
 }
 

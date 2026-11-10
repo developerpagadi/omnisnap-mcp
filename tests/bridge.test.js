@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
 import { rmSync, existsSync } from 'node:fs';
 import { Bridge } from '../src/bridge/ws.js';
+import { config } from '../src/lib/config.js';
 import { log } from '../src/lib/logger.js';
 
 // The logger reads its level at import time, so setting the variable inside a
@@ -294,4 +295,39 @@ test('a paired token survives a restart, so pairing is a one-time act', async ()
   again.close();
   await revived.stop();
   rmSync(STATE, { recursive: true, force: true });
+});
+
+test('a fan-out is refused before it becomes a queue of timeouts', async (t) => {
+  const { bridge, url } = await startBridge();
+  t.after(() => bridge.stop());
+
+  const ext = fakeExtension(url);
+  await ext.open();
+  ext.send({ type: 'hello', client: 'omnisnap-extension', version: '1.9.2' });
+  await ext.next();
+  ext.send({ type: 'pair-approve', code: bridge.pendingCode });
+  await ext.next();
+
+  // The extension is connected but deliberately answers nothing, which is the
+  // shape of a browser busy with the first request.
+  const inFlight = [];
+  for (let i = 0; i < config.maxConcurrentCalls; i++) {
+    inFlight.push(bridge.call('list_tabs', {}).catch(() => 'settled'));
+  }
+
+  await assert.rejects(bridge.call('list_tabs', {}), (error) => {
+    assert.equal(error.code, 'TOO_MANY_CALLS');
+    // The model has to be able to act on it: wait, do not retry harder.
+    assert.match(error.message, /wait for the ones you have/i);
+    return true;
+  });
+
+  assert.equal(
+    bridge.calls.size,
+    config.maxConcurrentCalls,
+    'the refused call must not occupy a slot of its own'
+  );
+
+  bridge.calls.failAll(new Error('test over'));
+  await Promise.all(inFlight);
 });

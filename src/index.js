@@ -70,24 +70,54 @@ if (process.argv.includes('--doctor')) {
   if (listening.ok) {
     out(`port ${config.port}   free, and now listening`);
     out('');
-    out('Waiting 10s for the extension to connect...');
-    const connected = await new Promise((resolve) => {
-      const timer = setTimeout(() => resolve(false), 10_000);
-      probe.on('state', (state) => {
-        if (state === 'ready' || state === 'pairing') {
-          clearTimeout(timer);
-          resolve(state);
-        }
-      });
-    });
 
-    if (connected === 'ready') out('The extension connected and is paired. Everything works.');
-    else if (connected === 'pairing')
-      out(`The extension connected and is waiting to pair. Its code should be ${probe.pendingCode}.`);
-    else {
+    /** Resolves on the first of `states`, or false if the wait runs out. */
+    const until = (states, ms) =>
+      new Promise((resolve) => {
+        const timer = setTimeout(() => resolve(false), ms);
+        const watch = (state) => {
+          if (!states.includes(state)) return;
+          clearTimeout(timer);
+          probe.off('state', watch);
+          resolve(state);
+        };
+        probe.on('state', watch);
+        if (states.includes(probe.state)) watch(probe.state);
+      });
+
+    // Long enough to cross the extension's reconnect backoff, which caps at a
+    // minute. Ten seconds only ever worked if the switch was flipped first.
+    out('Waiting up to 70s for the extension to connect.');
+    out('In Chrome: click the OmniSnap icon, then turn on "Connect to AI".');
+    let connected = await until(['ready', 'pairing'], 70_000);
+
+    if (connected === 'pairing') {
+      out('');
+      out('  The extension is connected and waiting to pair.');
+      out('');
+      out(`      Type this code into the extension:   ${probe.pendingCode}`);
+      out('');
+      // The extension cannot know this code, and must never claim to. If it
+      // is already showing one, it is talking to something that is not this
+      // server, and typing anything would hand that program the browser.
+      out('  The extension asks for it; it does not show one of its own. If it');
+      out('  is already showing a code, stop: something else holds the port.');
+      out('');
+      connected = await until(['ready'], config.pairingTtlMs);
+      if (!connected) out('Pairing was not completed in time. Run --doctor again for a fresh code.');
+    }
+
+    if (connected === 'ready') {
+      out('');
+      out('Paired. The extension answers on this port, and your AI client will');
+      out('find it the same way. Nothing else to do.');
+    } else if (!connected) {
+      out('');
       out('No extension connected.');
       out('  - Is OmniSnap AI Studio installed and enabled?');
-      out('  - Click its icon, then "Connect to AI".');
+      out('  - Does its popup have a "Connect to AI" switch? Versions before');
+      out('    1.6.0 have no bridge and cannot connect.');
+      out('  - Click the OmniSnap icon, then turn that switch on.');
       out(`  - If you changed OMNISNAP_PORT, the extension needs the same value (${config.port}).`);
     }
   } else if (listening.inUse) {

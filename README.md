@@ -89,9 +89,10 @@ passes next sprint, so the reasoning travels with the data.
 npx omnisnap-mcp --doctor
 ```
 
-Checks the port, whether a token is stored, and waits ten seconds for the
-extension. Almost every first-run problem is one of three things and this says
-which.
+Checks the port and whether a token is stored, then waits for the extension
+and walks you through pairing: it prints the code to type into the extension
+and waits for that to land. Almost every first-run problem is one of three
+things, and this says which.
 
 ## Security
 

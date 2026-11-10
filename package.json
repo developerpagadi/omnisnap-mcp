@@ -46,7 +46,7 @@
   "bugs": {
     "url": "https://github.com/developerpagadi/omnisnap-mcp/issues"
   },
-  "homepage": "https://omnisnap-ai-studio.netlify.app",
+  "homepage": "https://omnisnap.metago.in",
   "scripts": {
     "test": "node --test tests/*.test.js",
     "start": "node src/index.js"

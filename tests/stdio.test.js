@@ -140,7 +140,7 @@ test('the whole tool surface is reachable and documented', async () => {
  * every call. Every tool here only reads; a prompt before each capture would
  * make the server tedious enough to uninstall.
  */
-test('every tool declares itself read-only so clients need not prompt', async () => {
+test('only the tool that moves the page says it changes anything', async () => {
   const { stdout } = await session([INITIALIZE, { jsonrpc: '2.0', id: 2, method: 'tools/list' }]);
   const reply = stdout
     .split('\n')
@@ -148,10 +148,35 @@ test('every tool declares itself read-only so clients need not prompt', async ()
     .map((l) => JSON.parse(l))
     .find((m) => m.id === 2);
 
+  /* Every tool here reads, with one deliberate exception: scroll_to moves the
+     viewport, and the user watches their page move. Claiming read-only for it
+     would buy a few skipped prompts by being untrue, and the whole argument
+     for pairing this to a real logged-in browser is that it does not do that.
+
+     Nothing else may join it without a line here, because an agent handed a
+     silently-acting tool in someone's live session is the failure this
+     product exists to avoid. */
+  const MOVES = new Set(['scroll_to']);
+
   for (const tool of reply.result.tools) {
     assert.ok(tool.annotations, `${tool.name} has no annotations, so it defaults to destructive`);
-    assert.equal(tool.annotations.readOnlyHint, true, `${tool.name} must be marked read-only`);
+    if (MOVES.has(tool.name)) {
+      assert.equal(tool.annotations.readOnlyHint, false, `${tool.name} does change something`);
+      assert.equal(tool.annotations.destructiveHint, false, `${tool.name} destroys nothing`);
+      assert.equal(tool.annotations.idempotentHint, true, `${tool.name} is safe to repeat`);
+    } else {
+      assert.equal(tool.annotations.readOnlyHint, true, `${tool.name} must be marked read-only`);
+    }
   }
+
+  assert.ok(
+    reply.result.tools.some((t) => t.name === 'scroll_to'),
+    'the exception list names a tool that does not exist'
+  );
+
+  // The one place the browser answers back rather than being asked.
+  const ask = reply.result.tools.find((t) => t.name === 'await_user_selection');
+  assert.equal(ask.annotations.readOnlyHint, true, 'asking the user changes nothing');
 
   const status = reply.result.tools.find((t) => t.name === 'omnisnap_status');
   assert.equal(status.annotations.openWorldHint, false, 'status only reads local state');

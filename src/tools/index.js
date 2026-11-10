@@ -78,6 +78,24 @@ const VIEWPORT = z
 const READS_THE_PAGE = { readOnlyHint: true, openWorldHint: true };
 const READS_LOCAL = { readOnlyHint: true, openWorldHint: false };
 
+/**
+ * Moves the viewport, which the user will see happen. Not destructive and
+ * safe to repeat, but declaring it read-only would be a lie: the page they
+ * were looking at is not where they left it.
+ */
+const MOVES_THE_VIEW = { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true };
+
+/** Waits for a person. Changes nothing, but takes as long as they take. */
+const ASKS_THE_USER = { readOnlyHint: true, openWorldHint: true };
+
+/** A number from annotate_interactive, usable anywhere a selector is. */
+const ELEMENT_REF = z
+  .number()
+  .int()
+  .positive()
+  .optional()
+  .describe('A number from the most recent annotate_interactive on this tab. Easier and safer than retyping a selector.');
+
 export const TOOLS = [
   {
     name: 'omnisnap_status',
@@ -132,7 +150,8 @@ export const TOOLS = [
       'Screenshots a single element, given a CSS selector. Cheaper and far easier to reason about ' +
       'than a full page when the question is about one component.',
     schema: {
-      selector: z.string().min(1).describe('A CSS selector for the element to capture.'),
+      selector: z.string().min(1).optional().describe('A CSS selector for the element to capture.'),
+      element: ELEMENT_REF,
     },
     annotations: READS_THE_PAGE,
     render: (data) => image(data),
@@ -185,7 +204,9 @@ export const TOOLS = [
       hint: z
         .string()
         .min(1)
+        .optional()
         .describe('A CSS selector, visible text, or an accessible name identifying the element.'),
+      element: ELEMENT_REF,
     },
     annotations: READS_THE_PAGE,
     render: (data) =>
@@ -307,10 +328,85 @@ export const TOOLS = [
       'Returns the box model, computed typography, colours and spacing for a single element. ' +
       'Use it when a design question needs numbers rather than a picture.',
     schema: {
-      selector: z.string().min(1).describe('A CSS selector for the element to measure.'),
+      selector: z.string().min(1).optional().describe('A CSS selector for the element to measure.'),
+      element: ELEMENT_REF,
     },
     annotations: READS_THE_PAGE,
     render: (data) => json(data),
+  },
+
+  {
+    name: 'scroll_to',
+    title: 'Move the viewport',
+    description:
+      'Scrolls the page. Use it to see the rest of a page: annotate_interactive and the ' +
+      'screenshots only cover what is on screen, and its "coverage" field says how much of the ' +
+      'page that is. Scroll, then capture again. ' +
+      'This moves the camera, not the hands: it cannot click, type or navigate.',
+    schema: {
+      selector: z.string().min(1).optional().describe('Scroll until this element is centred.'),
+      element: ELEMENT_REF,
+      to: z
+        .enum(['top', 'bottom', 'next', 'previous'])
+        .optional()
+        .describe('"next" and "previous" move by about one screen.'),
+      y: z.number().optional().describe('An absolute scroll position in CSS pixels.'),
+    },
+    annotations: MOVES_THE_VIEW,
+    render: (data) =>
+      json(
+        data,
+        `At ${data.scrollY}px of ${data.pageHeight}px.` +
+          (data.atBottom ? ' This is the bottom of the page.' : '') +
+          (data.atTop ? ' This is the top of the page.' : '')
+      ),
+  },
+
+  {
+    name: 'await_user_selection',
+    title: 'Ask the user to point at it',
+    description:
+      'Arms the element picker in the browser and waits for the user to click the elements ' +
+      'they mean, then returns them with ranked selectors. ' +
+      'Use this instead of guessing when a page has several things that match the description ' +
+      '("the save button", "that broken card"), or when you cannot find what the user is ' +
+      'describing. Asking costs one turn; picking the wrong element costs the whole task.',
+    schema: {
+      timeoutMs: z
+        .number()
+        .int()
+        .min(5_000)
+        .max(600_000)
+        .default(180_000)
+        .describe('How long to wait for the user. They need time to find the element.'),
+    },
+    annotations: ASKS_THE_USER,
+    render: (data) =>
+      json(
+        data,
+        (data.elements || [])
+          .map((e) => `${e.label} (${e.tag}) · ${e.score}/100\n  ${e.selector}`)
+          .join('\n\n') || 'The user chose nothing.'
+      ),
+  },
+
+  {
+    name: 'capture_matrix',
+    title: 'The page at three widths',
+    description:
+      'Captures the full page at phone, tablet and desktop widths and returns them side by side ' +
+      'in one image. Use it to check a responsive change in a single look, rather than three ' +
+      'captures you have to hold in mind at once.',
+    schema: {
+      widths: z
+        .array(z.enum(['mobile', 'tablet', 'desktop']))
+        .min(1)
+        .max(3)
+        .optional()
+        .describe('Defaults to all three: 375, 768 and 1440.'),
+    },
+    annotations: READS_THE_PAGE,
+    render: (data) => image(data),
   },
 ];
 

@@ -134,6 +134,32 @@ test('the whole tool surface is reachable and documented', async () => {
   }
 });
 
+/*
+ * Without annotations the spec defaults to readOnlyHint false and
+ * destructiveHint true, so a client puts a confirmation dialog in front of
+ * every call. Every tool here only reads; a prompt before each capture would
+ * make the server tedious enough to uninstall.
+ */
+test('every tool declares itself read-only so clients need not prompt', async () => {
+  const { stdout } = await session([INITIALIZE, { jsonrpc: '2.0', id: 2, method: 'tools/list' }]);
+  const reply = stdout
+    .split('\n')
+    .filter((l) => l.trim())
+    .map((l) => JSON.parse(l))
+    .find((m) => m.id === 2);
+
+  for (const tool of reply.result.tools) {
+    assert.ok(tool.annotations, `${tool.name} has no annotations, so it defaults to destructive`);
+    assert.equal(tool.annotations.readOnlyHint, true, `${tool.name} must be marked read-only`);
+  }
+
+  const status = reply.result.tools.find((t) => t.name === 'omnisnap_status');
+  assert.equal(status.annotations.openWorldHint, false, 'status only reads local state');
+
+  const capture = reply.result.tools.find((t) => t.name === 'capture_page');
+  assert.equal(capture.annotations.openWorldHint, true, 'the live web changes underneath you');
+});
+
 test('an unpaired status call returns the remedy, not a stack trace', async () => {
   const { stdout } = await session([
     INITIALIZE,

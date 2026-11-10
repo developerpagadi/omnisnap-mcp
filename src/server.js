@@ -16,6 +16,7 @@ import { Bridge } from './bridge/ws.js';
 import { config } from './lib/config.js';
 import { log } from './lib/logger.js';
 import { BridgeError, NOT_PAIRED, PAIRING_PENDING, toToolError, STORE_URL } from './lib/errors.js';
+import { SELECTOR_GUIDE, DIAGNOSTICS_GUIDE } from './guides.js';
 
 export const VERSION = '0.1.0';
 
@@ -104,7 +105,12 @@ export function createServer() {
   for (const tool of TOOLS) {
     server.registerTool(
       tool.name,
-      { title: tool.title, description: tool.description, inputSchema: tool.schema },
+      {
+        title: tool.title,
+        description: tool.description,
+        inputSchema: tool.schema,
+        annotations: tool.annotations,
+      },
       async (args) => {
         try {
           if (tool.name === 'omnisnap_status') return statusReport(bridge, listening);
@@ -139,6 +145,38 @@ export function createServer() {
         return { contents: [{ uri: uri.href, mimeType: 'text/plain', text: String(error.message) }] };
       }
     }
+  );
+
+  /*
+   * The reasoning, not just the data. A model that receives scores without
+   * knowing what they mean will override them; one that has read this will
+   * not. These need no browser, so they are the one part of the surface that
+   * works before pairing.
+   */
+  server.registerResource(
+    'selector-guide',
+    'omnisnap://guide/selectors',
+    {
+      title: 'How to choose a selector that survives',
+      description:
+        'The ranking OmniSnap applies and why, what makes a selector fragile, and how the right ' +
+        'choice differs between Playwright, Selenium and Cypress. Read this before writing tests.',
+      mimeType: 'text/markdown',
+    },
+    async (uri) => ({ contents: [{ uri: uri.href, mimeType: 'text/markdown', text: SELECTOR_GUIDE }] })
+  );
+
+  server.registerResource(
+    'diagnostics-guide',
+    'omnisnap://guide/diagnostics',
+    {
+      title: 'How to read OmniSnap diagnostics',
+      description:
+        'What the vitals thresholds mean, and the two mistakes that produce confidently wrong ' +
+        'defect reports. Read this before writing one up.',
+      mimeType: 'text/markdown',
+    },
+    async (uri) => ({ contents: [{ uri: uri.href, mimeType: 'text/markdown', text: DIAGNOSTICS_GUIDE }] })
   );
 
   server.registerResource(
@@ -182,6 +220,7 @@ export function createServer() {
               `Write a ${framework} test covering: ${flow}\n\n` +
               'First call annotate_interactive to see the page and get numbered selectors. ' +
               'Then call get_page_object with this framework. ' +
+              'Read omnisnap://guide/selectors first if you have not already. ' +
               'Use only selectors OmniSnap returned, and prefer the highest-scoring one for each element. ' +
               'If any selector reports more than one match, say so rather than using it.',
           },
@@ -205,7 +244,8 @@ export function createServer() {
               `Write a defect report for: ${summary}\n\n` +
               'Call capture_page and get_diagnostics first. Ground every claim in what they return: ' +
               'cite the actual failed requests, console errors and vitals. ' +
-              'Do not invent a root cause the evidence does not support. ' +
+              'Read omnisnap://guide/diagnostics first: it covers the two mistakes that produce ' +
+              'confidently wrong reports. Do not invent a root cause the evidence does not support. ' +
               'Include the exact browser and viewport from the diagnostics.',
           },
         },

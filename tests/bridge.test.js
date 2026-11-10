@@ -9,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
-import { rmSync } from 'node:fs';
+import { rmSync, existsSync } from 'node:fs';
 import { Bridge } from '../src/bridge/ws.js';
 import { log } from '../src/lib/logger.js';
 
@@ -242,6 +242,28 @@ test('a second extension replaces the first rather than joining it', async () =>
   assert.ok(true, 'the first connection was displaced');
 
   second.close();
+  await bridge.stop();
+});
+
+/*
+ * config read OMNISNAP_STATE_DIR once at import, so redirecting it in a test
+ * did nothing and the suite wrote real pairing tokens into the developer's
+ * home directory. Reading it on access fixed that; this keeps it fixed.
+ */
+test('the suite never writes to the real home directory', async () => {
+  const { bridge, url } = await startBridge();
+  const ext = fakeExtension(url);
+  await ext.open();
+  ext.send({ type: 'hello', client: 'omnisnap-extension' });
+  await ext.next();
+  ext.send({ type: 'pair-approve', code: bridge.pendingCode });
+  await ext.next();
+
+  const { readState } = await import('../src/lib/config.js');
+  assert.ok(readState().token, 'the token should land in the redirected state dir');
+  assert.ok(existsSync(join(STATE, 'bridge.json')), 'and specifically in the temp dir');
+
+  ext.close();
   await bridge.stop();
 });
 

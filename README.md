@@ -1,3 +1,5 @@
+<img src="assets/logo.svg" width="56" alt="" align="left" />
+
 # omnisnap-mcp
 
 **Selectors that don't rot, and a page your agent can actually see.**
@@ -65,8 +67,31 @@ to confirm.
 | `measure_accessibility` | WCAG AA failures with selectors |
 | `inspect_element` | Box model and computed styles for one element |
 
-Plus resources (`omnisnap://capture/latest`) and four slash commands:
-`/write-test`, `/file-bug`, `/audit-accessibility`, `/extract-design-system`.
+Four slash commands: `/write-test`, `/file-bug`, `/audit-accessibility`,
+`/extract-design-system`.
+
+And four resources, two of which work before you have paired anything:
+
+| Resource | |
+| --- | --- |
+| `omnisnap://guide/selectors` | The ranking and why, what makes a selector fragile, how the right choice differs per framework |
+| `omnisnap://guide/diagnostics` | What the vitals mean, and the two mistakes that produce confidently wrong bug reports |
+| `omnisnap://capture/latest` | The most recent screenshot and its metadata |
+| `omnisnap://help/pairing` | Install and pairing steps |
+
+The guides are the part that is not an API. Any server can hand back a list of
+selectors; knowing which one to pick is what decides whether the test still
+passes next sprint, so the reasoning travels with the data.
+
+## Troubleshooting
+
+```bash
+npx omnisnap-mcp --doctor
+```
+
+Checks the port, whether a token is stored, and waits ten seconds for the
+extension. Almost every first-run problem is one of three things and this says
+which.
 
 ## Security
 

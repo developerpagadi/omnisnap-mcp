@@ -59,6 +59,25 @@ const VIEWPORT = z
   .enum(['current', 'mobile', 'tablet', 'desktop', 'wide'])
   .describe('Render the page at a breakpoint before capturing. "current" uses the window as it is.');
 
+/**
+ * Annotations, and why every tool carries them.
+ *
+ * The spec's defaults are `readOnlyHint: false` and `destructiveHint: true`,
+ * so a tool that says nothing is treated as potentially destructive and the
+ * client asks the user to confirm it. Every tool here only reads, and a
+ * confirmation dialog in front of each capture would make the server tedious
+ * enough to uninstall.
+ *
+ * `openWorldHint` is true for anything that touches the live page, because
+ * the web changes underneath you and the same call can legitimately return
+ * something different each time. Status is the exception: it only inspects
+ * local state.
+ *
+ * These are hints, not a security boundary. The real boundary is pairing.
+ */
+const READS_THE_PAGE = { readOnlyHint: true, openWorldHint: true };
+const READS_LOCAL = { readOnlyHint: true, openWorldHint: false };
+
 export const TOOLS = [
   {
     name: 'omnisnap_status',
@@ -68,6 +87,7 @@ export const TOOLS = [
       'Call this first when any other OmniSnap tool fails, and to get pairing instructions.',
     schema: {},
     local: true,
+    annotations: READS_LOCAL,
   },
 
   {
@@ -77,6 +97,7 @@ export const TOOLS = [
       'Lists the open browser tabs OmniSnap can act on, with their titles and URLs. ' +
       'Use it to find the right tab before capturing or collecting selectors.',
     schema: {},
+    annotations: READS_THE_PAGE,
     render: (data) =>
       json(
         data,
@@ -100,6 +121,7 @@ export const TOOLS = [
         .describe('"full" stitches the whole page, "viewport" takes only what is on screen.'),
       viewport: VIEWPORT.default('current'),
     },
+    annotations: READS_THE_PAGE,
     render: (data) => image(data),
   },
 
@@ -112,6 +134,7 @@ export const TOOLS = [
     schema: {
       selector: z.string().min(1).describe('A CSS selector for the element to capture.'),
     },
+    annotations: READS_THE_PAGE,
     render: (data) => image(data),
   },
 
@@ -130,6 +153,7 @@ export const TOOLS = [
         .default('controls')
         .describe('"controls" covers buttons, inputs and selects; "all" adds links and landmarks.'),
     },
+    annotations: READS_THE_PAGE,
     render: (data) => {
       const rows = (data.elements || [])
         .map(
@@ -163,6 +187,7 @@ export const TOOLS = [
         .min(1)
         .describe('A CSS selector, visible text, or an accessible name identifying the element.'),
     },
+    annotations: READS_THE_PAGE,
     render: (data) =>
       json(
         data,
@@ -200,6 +225,7 @@ export const TOOLS = [
         ])
         .describe('The test framework the output should be written for.'),
     },
+    annotations: READS_THE_PAGE,
     render: (data) => text(data.code || 'Nothing has been collected on this tab yet.'),
   },
 
@@ -212,6 +238,7 @@ export const TOOLS = [
     schema: {
       selectors: z.array(z.string().min(1)).min(1).max(200).describe('CSS or XPath selectors to check.'),
     },
+    annotations: READS_THE_PAGE,
     render: (data) =>
       json(
         data,
@@ -235,6 +262,7 @@ export const TOOLS = [
       'This is measured in the user\'s real session, so it reflects their network, their extensions ' +
       'and their data, which a clean automated browser cannot show you.',
     schema: {},
+    annotations: READS_THE_PAGE,
     render: (data) => json(data),
   },
 
@@ -251,6 +279,7 @@ export const TOOLS = [
         .default('json')
         .describe('Output shape. "css" emits custom properties.'),
     },
+    annotations: READS_THE_PAGE,
     render: (data) => (data.code ? text(data.code) : json(data)),
   },
 
@@ -261,6 +290,7 @@ export const TOOLS = [
       'Audits the live page for contrast failures, missing accessible names, skipped heading levels ' +
       'and touch targets below the minimum size. Returns the offending elements with selectors.',
     schema: {},
+    annotations: READS_THE_PAGE,
     render: (data) =>
       json(
         data,
@@ -279,6 +309,7 @@ export const TOOLS = [
     schema: {
       selector: z.string().min(1).describe('A CSS selector for the element to measure.'),
     },
+    annotations: READS_THE_PAGE,
     render: (data) => json(data),
   },
 ];

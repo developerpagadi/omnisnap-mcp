@@ -44,7 +44,18 @@ export const config = {
   /** Any single frame from the extension. Bounds memory on a hostile client. */
   maxFrameBytes: num(process.env.OMNISNAP_MAX_FRAME_BYTES, 24 * 1024 * 1024),
 
-  stateDir: process.env.OMNISNAP_STATE_DIR || join(homedir(), '.omnisnap'),
+  /**
+   * A getter, not a value.
+   *
+   * Everything else here is read once at import and that is fine, because
+   * nothing changes it afterwards. This one does change: the test suite
+   * points it at a temporary directory, and when it was captured at import
+   * the tests wrote real pairing tokens into the developer's home directory
+   * instead. Reading it on access costs nothing and makes the redirect work.
+   */
+  get stateDir() {
+    return process.env.OMNISNAP_STATE_DIR || join(homedir(), '.omnisnap');
+  },
 };
 
 const statePath = () => join(config.stateDir, 'bridge.json');

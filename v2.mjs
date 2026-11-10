@@ -17,7 +17,7 @@ console.log(ok ? ' ok\n' : ' timed out\n'); if (!ok) process.exit(1);
 
 /* The extension names its version in the handshake, so staleness is a fact
    to read rather than something to infer from behaviour three times over. */
-const EXPECTED = '1.7.0';
+const EXPECTED = '1.9.0';
 const running = (bridge.client || {}).version || 'unknown';
 console.log(`extension reports version ${running}, expected ${EXPECTED}`);
 if (running !== EXPECTED) {

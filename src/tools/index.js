@@ -391,6 +391,155 @@ export const TOOLS = [
   },
 
   {
+    name: 'read_page',
+    title: 'The page as text',
+    description:
+      'Returns the page\'s text and heading outline. ' +
+      'Use this first when the question is what the page says rather than what it looks like: ' +
+      'it costs a fortieth of a screenshot and a model reads a paragraph far more reliably than ' +
+      'a picture of one. Reach for a capture when the question is visual.',
+    schema: {
+      scope: z
+        .enum(['page', 'viewport'])
+        .default('page')
+        .describe('"page" prefers the main content region; "viewport" is only what is on screen.'),
+      limit: z.number().int().min(500).max(60_000).default(12_000).describe('Maximum characters.'),
+    },
+    annotations: READS_THE_PAGE,
+    render: (data) =>
+      json(
+        data,
+        [
+          `${data.title}\n${data.url}`,
+          '',
+          (data.headings || []).map((h) => `${'  '.repeat(h.level - 1)}${h.text}`).join('\n'),
+          '',
+          data.text,
+          data.truncated ? `\n[truncated at ${data.text.length} of ${data.totalLength} characters]` : '',
+        ].join('\n')
+      ),
+  },
+
+  {
+    name: 'propose_action',
+    title: 'Ask the user to approve an action',
+    description:
+      'Proposes clicking an element or typing into a field. The extension outlines the element ' +
+      'and asks the user to approve; nothing happens unless they do. ' +
+      'Use it to reach states that only exist after an interaction — an open menu, a validation ' +
+      'error, the next step of a form — which is where most defects are. ' +
+      'The user may decline. If they do, do not retry: ask them what they want instead.',
+    schema: {
+      action: z.enum(['click', 'type']).describe('What to propose.'),
+      selector: z.string().min(1).optional().describe('A CSS selector, or the visible text.'),
+      element: ELEMENT_REF,
+      value: z.string().optional().describe('For "type": the text to enter.'),
+      timeoutMs: z
+        .number()
+        .int()
+        .min(5_000)
+        .max(600_000)
+        .default(120_000)
+        .describe('How long to wait for the user to answer.'),
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    render: (data) => text(`Approved. ${data.action === 'type' ? 'Typed into' : 'Clicked'} ${data.target}.`),
+  },
+
+  {
+    name: 'set_viewport',
+    title: 'Show the page at another width',
+    description:
+      'Holds the page at a phone, tablet or desktop width, and leaves it there. ' +
+      'Every tool afterwards — the numbered map, the accessibility audit, the measurements — ' +
+      'then answers about that width, which is how you find what is wrong at 375px rather than ' +
+      'just noticing that something is. Call it with reset to give the page back. ' +
+      'Chrome shows a debugging banner while this is held; that is Chrome, not the page.',
+    schema: {
+      preset: z.enum(['mobile', 'tablet', 'desktop']).optional().describe('375, 768 or 1440.'),
+      width: z.number().int().min(240).max(3840).optional(),
+      height: z.number().int().min(320).max(2400).optional(),
+      reset: z.boolean().default(false).describe('Hand the page back at its real size.'),
+    },
+    annotations: MOVES_THE_VIEW,
+    render: (data) => json(data, data.note || 'The page is back at its real size.'),
+  },
+
+  {
+    name: 'set_color_scheme',
+    title: 'Light or dark',
+    description:
+      'Shows the page as if the user preferred light or dark, without them changing anything. ' +
+      'Dark mode is where contrast regressions hide, because it is the theme nobody screenshots. ' +
+      'Use "auto" to hand it back.',
+    schema: { scheme: z.enum(['light', 'dark', 'auto']) },
+    annotations: MOVES_THE_VIEW,
+    render: (data) => json(data, data.note || 'The page follows the real setting again.'),
+  },
+
+  {
+    name: 'hover',
+    title: 'Hover and photograph',
+    description:
+      'Puts the pointer on an element and returns a screenshot of what that reveals: dropdowns, ' +
+      'tooltips, hover styling. These states cannot be reached any other way — a synthetic event ' +
+      'fires the page handlers but leaves the CSS untouched, so this uses a real pointer move. ' +
+      'Nothing is clicked.',
+    schema: {
+      selector: z.string().min(1).optional(),
+      element: ELEMENT_REF,
+    },
+    annotations: MOVES_THE_VIEW,
+    render: (data) => image(data, `Hovering ${data.hovered}.`),
+  },
+
+  {
+    name: 'focus_element',
+    title: 'Focus and photograph',
+    description:
+      'Focuses an element and returns a screenshot. Use it to check focus rings, which are the ' +
+      'most commonly missing accessibility feature and are invisible in an ordinary capture.',
+    schema: {
+      selector: z.string().min(1).optional(),
+      element: ELEMENT_REF,
+    },
+    annotations: MOVES_THE_VIEW,
+    render: (data) => image(data, `Focused ${data.focused}.`),
+  },
+
+  {
+    name: 'watch_page',
+    title: 'Watch for a while',
+    description:
+      'Watches the page for a number of seconds and reports the console errors, failed requests ' +
+      'and layout shifts that happen during it. ' +
+      'Every other tool here asks a question and gets an answer as of that instant; most of what ' +
+      'goes wrong does not wait to be asked. Use it while the user reproduces something, or just ' +
+      'after a change, when asking afterwards would find a page that looks fine.',
+    schema: {
+      seconds: z.number().int().min(1).max(120).default(10).describe('How long to watch.'),
+    },
+    annotations: READS_THE_PAGE,
+    render: (data) =>
+      json(
+        data,
+        [
+          `Watched ${Math.round(data.watchedMs / 1000)}s.`,
+          `${data.errors.length} console errors, ${data.failedRequests.length} failed requests, ` +
+            `${data.layoutShifts.length} layout shifts (total ${data.totalShift}).`,
+          '',
+          ...data.errors.slice(0, 12).map((e) => `  [${e.level} @${e.at}ms] ${e.text}`),
+          ...data.failedRequests.slice(0, 8).map((f) => `  [failed @${f.at}ms] ${f.url}`),
+        ].join('\n')
+      ),
+  },
+
+  {
     name: 'capture_matrix',
     title: 'The page at three widths',
     description:

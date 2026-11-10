@@ -156,11 +156,29 @@ test('only the tool that moves the page says it changes anything', async () => {
      Nothing else may join it without a line here, because an agent handed a
      silently-acting tool in someone's live session is the failure this
      product exists to avoid. */
-  const MOVES = new Set(['scroll_to']);
+  const MOVES = new Set([
+    'scroll_to',
+    // All of these change how the page is shown, not what it contains. The
+    // user sees the result, so none of them may claim to be a pure read.
+    'set_viewport',
+    'set_color_scheme',
+    'hover',
+    'focus_element',
+  ]);
+
+  /* propose_action can click and type, so it is declared for what it is:
+     not read-only, not idempotent, and destructive. The safety is that the
+     user approves it in the page, which no annotation can express — so the
+     annotation tells the truth and lets the client prompt. */
+  const ACTS = new Set(['propose_action']);
 
   for (const tool of reply.result.tools) {
     assert.ok(tool.annotations, `${tool.name} has no annotations, so it defaults to destructive`);
-    if (MOVES.has(tool.name)) {
+    if (ACTS.has(tool.name)) {
+      assert.equal(tool.annotations.readOnlyHint, false, `${tool.name} acts on the page`);
+      assert.equal(tool.annotations.destructiveHint, true, `${tool.name} may not be undoable`);
+      assert.equal(tool.annotations.idempotentHint, false, `${tool.name} is not safe to repeat`);
+    } else if (MOVES.has(tool.name)) {
       assert.equal(tool.annotations.readOnlyHint, false, `${tool.name} does change something`);
       assert.equal(tool.annotations.destructiveHint, false, `${tool.name} destroys nothing`);
       assert.equal(tool.annotations.idempotentHint, true, `${tool.name} is safe to repeat`);
@@ -169,10 +187,12 @@ test('only the tool that moves the page says it changes anything', async () => {
     }
   }
 
-  assert.ok(
-    reply.result.tools.some((t) => t.name === 'scroll_to'),
-    'the exception list names a tool that does not exist'
-  );
+  for (const name of [...MOVES, ...ACTS]) {
+    assert.ok(
+      reply.result.tools.some((t) => t.name === name),
+      `the exception list names ${name}, which does not exist`
+    );
+  }
 
   // The one place the browser answers back rather than being asked.
   const ask = reply.result.tools.find((t) => t.name === 'await_user_selection');

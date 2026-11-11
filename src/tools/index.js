@@ -305,6 +305,43 @@ export const TOOLS = [
   },
 
   {
+    name: 'audit_page',
+    title: 'Problems only a rendered page has',
+    description:
+      'Audits the live page for defects that exist only once it has rendered, and that reading ' +
+      'the source cannot find: a control with something painted over it, text cut off by its own ' +
+      'container, a page that scrolls sideways, a webfont that never arrived, images with no ' +
+      'reserved space, and text too small to read. ' +
+      'Use it after a layout change, at a width you do not normally look at, or when a user says ' +
+      'a button "does nothing" and the code looks fine. The covered-control check answers that ' +
+      'one directly: it asks what a click at the button would actually hit.',
+    schema: {},
+    annotations: READS_THE_PAGE,
+    render: (data) => {
+      const bySeverity = { critical: [], serious: [], moderate: [] };
+      for (const issue of data.issues || []) (bySeverity[issue.severity] || bySeverity.moderate).push(issue);
+
+      const lines = [];
+      for (const [severity, found] of Object.entries(bySeverity)) {
+        for (const issue of found) {
+          lines.push(`${severity.toUpperCase()} ${issue.rule}: ${issue.message}`);
+          if (issue.selector) lines.push(`    ${issue.selector}`);
+          if (issue.coveredBy) lines.push(`    covered by ${issue.coveredBy}`);
+        }
+      }
+
+      const where = data.checked || {};
+      return json(
+        data,
+        lines.length
+          ? `${(data.issues || []).length} found at ${where.viewport ? `${where.viewport.width}px` : 'this width'}.\n\n${lines.join('\n')}`
+          : `Nothing found at ${where.viewport ? `${where.viewport.width}px` : 'this width'}. ` +
+            'Worth repeating after set_viewport: most of these only appear at one width.'
+      );
+    },
+  },
+
+  {
     name: 'measure_accessibility',
     title: 'Accessibility check',
     description:

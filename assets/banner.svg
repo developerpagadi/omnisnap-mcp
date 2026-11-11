@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="860" height="252" viewBox="0 0 860 252" role="img" aria-label="omnisnap-mcp: selectors that don't rot, and a page your agent can actually see">
+  <!--
+    Brand triad, unchanged from the extension: Midnight #08090B, Snap Yellow
+    #FFC900, Cloud #F5F3EF. Drawn rather than exported so it stays crisp at
+    any width and weighs under 3KB on the npm page.
+  -->
+  <defs>
+    <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101217"/>
+      <stop offset="1" stop-color="#08090B"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.18" cy="0.2" r="0.75">
+      <stop offset="0" stop-color="#FFC900" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#FFC900" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="860" height="252" rx="18" fill="url(#field)"/>
+  <rect width="860" height="252" rx="18" fill="url(#glow)"/>
+
+  <!-- Aperture mark -->
+  <g transform="translate(64 82)">
+    <rect width="96" height="96" rx="22" fill="#FFC900"/>
+    <g transform="translate(48 48)">
+      <circle r="27" fill="none" stroke="#08090B" stroke-width="5"/>
+      <g stroke="#08090B" stroke-width="5" stroke-linecap="round">
+        <line x1="0" y1="-27" x2="0" y2="-9"/>
+        <line x1="23.4" y1="-13.5" x2="7.8" y2="-4.5"/>
+        <line x1="23.4" y1="13.5" x2="7.8" y2="4.5"/>
+        <line x1="0" y1="27" x2="0" y2="9"/>
+        <line x1="-23.4" y1="13.5" x2="-7.8" y2="4.5"/>
+        <line x1="-23.4" y1="-13.5" x2="-7.8" y2="-4.5"/>
+      </g>
+    </g>
+  </g>
+
+  <text x="196" y="110" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="46" font-weight="700" fill="#F5F3EF" letter-spacing="-0.6">omnisnap<tspan fill="#FFC900">-mcp</tspan></text>
+  <text x="197" y="150" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="19" fill="#B0AEA8">Selectors that don't rot, and a page your agent can actually see.</text>
+
+  <!-- The three tiers, which is the structure of the whole tool surface -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="13">
+    <g transform="translate(197 184)">
+      <rect width="150" height="30" rx="8" fill="#FFC900" fill-opacity="0.12" stroke="#FFC900" stroke-opacity="0.35"/>
+      <text x="16" y="20" fill="#FFC900">it reads</text>
+    </g>
+    <g transform="translate(359 184)">
+      <rect width="208" height="30" rx="8" fill="#F5F3EF" fill-opacity="0.07" stroke="#F5F3EF" stroke-opacity="0.18"/>
+      <text x="16" y="20" fill="#B0AEA8">it moves the camera</text>
+    </g>
+    <g transform="translate(579 184)">
+      <rect width="236" height="30" rx="8" fill="#F5F3EF" fill-opacity="0.07" stroke="#F5F3EF" stroke-opacity="0.18"/>
+      <text x="16" y="20" fill="#B0AEA8">it asks before it acts</text>
+    </g>
+  </g>
+</svg>

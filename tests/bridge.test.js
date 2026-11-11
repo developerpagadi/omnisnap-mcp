@@ -331,3 +331,52 @@ test('a fan-out is refused before it becomes a queue of timeouts', async (t) => 
   bridge.calls.failAll(new Error('test over'));
   await Promise.all(inFlight);
 });
+
+test('status names an extension too old for half the tools', async (t) => {
+  const { bridge, url } = await startBridge();
+  t.after(() => bridge.stop());
+
+  const ext = fakeExtension(url);
+  await ext.open();
+  // The version that shipped before the bridge grew its second half.
+  ext.send({ type: 'hello', client: 'omnisnap-extension', version: '1.6.0' });
+  await ext.next();
+  ext.send({ type: 'pair-approve', code: bridge.pendingCode });
+  await ext.next();
+
+  const { statusReport } = await import('../src/server.js');
+  const report = statusReport(bridge, { ok: true });
+  const text = report.content[0].text;
+
+  assert.equal(report.structuredContent.outdated, true, 'an old extension is flagged');
+  assert.equal(report.structuredContent.extensionVersion, '1.6.0');
+  assert.ok(
+    report.structuredContent.unavailableTools.includes('scroll_to'),
+    'and the tools it cannot answer are named in the data, not only the prose'
+  );
+
+  /* The failure this prevents: an old extension pairs perfectly well, then
+     refuses ten tools one at a time, which reads as a broken server. */
+  assert.match(text, /older than 1\.9\.0/, 'the prose says which version is needed');
+  assert.match(text, /scroll_to/, 'and lists what will refuse');
+  assert.match(text, /Chrome Web Store/, 'and says how to fix it');
+});
+
+test('status does not cry wolf about a current extension', async (t) => {
+  const { bridge, url } = await startBridge();
+  t.after(() => bridge.stop());
+
+  const ext = fakeExtension(url);
+  await ext.open();
+  ext.send({ type: 'hello', client: 'omnisnap-extension', version: '1.9.4' });
+  await ext.next();
+  ext.send({ type: 'pair-approve', code: bridge.pendingCode });
+  await ext.next();
+
+  const { statusReport } = await import('../src/server.js');
+  const report = statusReport(bridge, { ok: true });
+
+  assert.equal(report.structuredContent.outdated, false);
+  assert.deepEqual(report.structuredContent.unavailableTools, []);
+  assert.match(report.content[0].text, /Every OmniSnap tool is available/);
+});

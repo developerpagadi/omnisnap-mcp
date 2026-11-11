@@ -53,7 +53,42 @@ function explain(error, bridge) {
   return toToolError(error);
 }
 
-function statusReport(bridge, listening) {
+/**
+ * The oldest extension that can answer every tool this server advertises.
+ *
+ * Ten of the twenty-two tools arrived with 1.9. An older extension connects
+ * and pairs perfectly well, then refuses half the surface with NOT_IMPLEMENTED
+ * one tool at a time, which reads as a broken server rather than an old
+ * browser extension. Saying it once, up front, is the difference between a
+ * two-minute fix and an afternoon.
+ */
+const MINIMUM_EXTENSION = '1.9.0';
+
+/** Enough of semver for "is this at least that". Both are ours. */
+function olderThan(version, minimum) {
+  const parts = (value) => String(value).split('.').map((n) => Number.parseInt(n, 10) || 0);
+  const [a, b] = [parts(version), parts(minimum)];
+  for (let i = 0; i < 3; i++) {
+    if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) < (b[i] || 0);
+  }
+  return false;
+}
+
+/** The tools whose other half shipped in the extension's 1.9 release. */
+const NEEDS_1_9 = [
+  'scroll_to',
+  'read_page',
+  'hover',
+  'focus_element',
+  'set_viewport',
+  'set_color_scheme',
+  'watch_page',
+  'propose_action',
+  'await_user_selection',
+  'capture_matrix',
+];
+
+export function statusReport(bridge, listening) {
   if (!listening.ok) {
     return {
       isError: true,
@@ -80,18 +115,34 @@ function statusReport(bridge, listening) {
     return { content: [{ type: 'text', text: NOT_PAIRED }], structuredContent: { ok: false, state: 'disconnected' } };
   }
 
+  const version = bridge.client && bridge.client.version;
+  const outdated = version && olderThan(version, MINIMUM_EXTENSION);
+
   return {
     content: [
       {
         type: 'text',
         text:
-          `OmniSnap is connected.\n` +
-          `  extension: ${bridge.client ? `${bridge.client.name} ${bridge.client.version}` : 'paired'}\n` +
+          'OmniSnap is connected.\n' +
+          `  extension: ${bridge.client ? `${bridge.client.name} ${version}` : 'paired'}\n` +
           `  bridge:    ${config.host}:${config.port}\n\n` +
-          'Every OmniSnap tool is available.',
+          (outdated
+            ? `This extension is older than ${MINIMUM_EXTENSION}, so ten tools will refuse:\n` +
+              `  ${NEEDS_1_9.join(', ')}\n\n` +
+              'Everything else works. Tell the user to update OmniSnap AI Studio from the\n' +
+              `Chrome Web Store, then reload the extension: ${STORE_URL}`
+            : 'Every OmniSnap tool is available.'),
       },
     ],
-    structuredContent: { ok: true, state: 'ready', client: bridge.client },
+    structuredContent: {
+      ok: true,
+      state: 'ready',
+      client: bridge.client,
+      extensionVersion: version || null,
+      minimumExtension: MINIMUM_EXTENSION,
+      outdated: !!outdated,
+      unavailableTools: outdated ? NEEDS_1_9 : [],
+    },
   };
 }
 

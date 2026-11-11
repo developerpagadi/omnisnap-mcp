@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.3.0
+
+### `omnisnap_status` says when the extension is too old
+
+Ten of the twenty-two tools arrived with extension 1.9. An older extension
+connects and pairs perfectly well, then refuses those ten one at a time, which
+reads as a broken server rather than a browser extension in need of an update.
+
+Status now compares the version the extension reports in its handshake against
+the minimum, names every tool that will refuse, and says where to update. Both
+in the prose and in `structuredContent`, so a client can act on it without
+parsing English.
+
+### Documentation
+
+Rewritten around a worked example rather than a feature list, with a branded
+banner, a comparison table, and a troubleshooting table covering the failures
+people actually hit. Both the SVG and the PNG are generated from one script so
+the two cannot drift.
+
 ## 0.2.3
 
 The repository is public, so the links that pointed nowhere now point

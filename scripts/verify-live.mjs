@@ -20,7 +20,7 @@ import { join } from 'node:path';
 import { Bridge } from '../src/bridge/ws.js';
 import { log } from '../src/lib/logger.js';
 
-const EXPECTED = '1.9.3';
+const EXPECTED = '1.9.4';
 const OUT = process.argv[2] || '/tmp/omnisnap-verify';
 mkdirSync(OUT, { recursive: true });
 log.setLevel('silent');

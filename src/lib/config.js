@@ -52,7 +52,7 @@ export const config = {
    * what it does is serialised anyway: Chrome allows two screenshots a
    * second, and a prompt waiting on a human is not something you can have two
    * of. An agent that fans out twenty calls does not get its answers twenty
-   * times faster — it gets a queue, every entry of which is burning its own
+   * times faster. It gets a queue, every entry of which is burning its own
    * thirty-second timeout, and the last ones time out having never been
    * reached.
    *

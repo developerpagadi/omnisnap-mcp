@@ -4,8 +4,8 @@
  * The threat this defends against is specific, and it is not hypothetical.
  * The bridge listens on a fixed loopback port, so the first process to claim
  * 8787 is the one the extension will talk to. If pairing were automatic, any
- * local process — a dependency's postinstall script, something that came in
- * with a npm package — could stand up a listener and quietly inherit the
+ * local process, such as a dependency's postinstall script, could stand up a
+ * listener and quietly inherit the
  * ability to screenshot and read every page the user is signed in to.
  *
  * So pairing requires a human to compare two numbers that arrived by
@@ -13,7 +13,7 @@
  * extension shows in its own UI. A rogue server can produce a code, but it
  * cannot make the user's AI client report that same code, because it is not
  * the server the client launched. The comparison is the whole defence, which
- * is why the code is six digits and not a hash — it has to be checkable by a
+ * is why the code is six digits rather than a hash. It has to be checkable by a
  * person at a glance.
  *
  * Tokens are compared in constant time, pairing attempts are rate limited,
@@ -120,7 +120,7 @@ export function forgetToken() {
  *
  * A browser sets `Origin` itself and page JavaScript cannot forge it, so
  * requiring a `chrome-extension://` origin means no web page can reach this
- * socket at all — not a malicious site the user is visiting, and not an
+ * socket at all: not a malicious site the user is visiting, and not an
  * iframe inside one. A non-browser client sends no Origin, which is how the
  * test harness and any future CLI connect; those still face the token.
  */

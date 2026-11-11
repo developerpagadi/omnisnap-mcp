@@ -264,7 +264,7 @@ export class Bridge extends EventEmitter {
 
   /**
    * The extension sends the code the *user* approved in its own UI. The
-   * server never sends the code over this socket — if it did, a rogue client
+   * server never sends the code over this socket. If it did, a rogue client
    * could simply read it back and pair itself. The code travels to the user
    * by the other route, through the AI client, and the user is the one who
    * compares them.

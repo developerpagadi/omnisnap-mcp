@@ -8,7 +8,7 @@
  * take them on faith and will cheerfully override them.
  *
  * So the reasoning travels with the data. These are static, need no browser,
- * and work the moment the server starts — which also makes them the one part
+ * and work the moment the server starts. That also makes them the one part
  * of the surface that is useful before the extension is paired.
  */
 
@@ -21,20 +21,20 @@ override it.
 
 ## The order, and the reason for it
 
-1. **An explicit test hook** — \`data-testid\`, \`data-test\`, \`data-cy\`, \`data-qa\`.
+1. **An explicit test hook**: \`data-testid\`, \`data-test\`, \`data-cy\`, \`data-qa\`.
    Somebody added it on purpose for this. Nothing about the design or the copy
    can move it.
-2. **Role and accessible name** — what a user sees and a screen reader
+2. **Role and accessible name**: what a user sees and a screen reader
    announces. Survives restyling and re-nesting. This is what Playwright's own
    guidance tells you to reach for first, ahead of test ids.
-3. **\`aria-label\`, a form \`name\`, a hand-written \`id\`** — contracts of one
+3. **\`aria-label\`, a form \`name\`, a hand-written \`id\`**: contracts of one
    kind or another. A form field name is part of the submitted payload, so it
    rarely changes without a reason.
-4. **Placeholder, visible text** — readable and stable against restyling, but
+4. **Placeholder, visible text**: readable and stable against restyling, but
    a copy edit or a second language breaks them.
-5. **CSS path** — depends on where the element sits, so moving it in the
+5. **CSS path**: depends on where the element sits, so moving it in the
    markup breaks the test.
-6. **Absolute XPath** — records the exact position in the tree. Any element
+6. **Absolute XPath**: records the exact position in the tree. Any element
    inserted above it breaks the path.
 
 Note that this inverts the common habit. "Right-click, Copy XPath" produces
@@ -55,9 +55,9 @@ before overriding.
 
 Each candidate reports how many elements it matches **on the live page**.
 
-- \`matches: 1\` — safe.
-- \`matches: 0\` — the element is gone, or it has not rendered yet.
-- \`matches: 2+\` — the single most common cause of a flaky suite. A selector
+- \`matches: 1\`: safe.
+- \`matches: 0\`: the element is gone, or it has not rendered yet.
+- \`matches: 2+\`: the single most common cause of a flaky suite. A selector
   that looks perfect and quietly matches three elements will pick a different
   one depending on timing.
 
@@ -115,5 +115,5 @@ Absence of errors there is not evidence of no errors.
 Ground every claim in a field that is actually present. Cite the failing
 request with its status and URL, the console error with its message, the vital
 with its measured value. If the evidence does not support a root cause, say
-so — a confident wrong diagnosis costs more than an honest gap.
+so. A confident wrong diagnosis costs more than an honest gap.
 `;

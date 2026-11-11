@@ -169,7 +169,7 @@ test('only the tool that moves the page says it changes anything', async () => {
 
   /* propose_action can click and type, so it is declared for what it is:
      not read-only, not idempotent, and destructive. The safety is that the
-     user approves it in the page, which no annotation can express — so the
+     user approves it in the page, which no annotation can express, so the
      annotation tells the truth and lets the client prompt. */
   const ACTS = new Set(['propose_action']);
 
@@ -262,7 +262,7 @@ test('the version it reports is the version it is', async () => {
 
   // Two copies of a version drift the first time one is bumped and not the
   // other, and the symptom is a server telling every client it is older than
-  // it is — which reads as a stale install nobody can fix by reinstalling.
+  // it is, which reads as a stale install nobody can fix by reinstalling.
   assert.equal(
     initialised.result.serverInfo.version,
     declared,

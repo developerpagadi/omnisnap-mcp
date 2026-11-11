@@ -2,6 +2,11 @@
 
 # omnisnap-mcp
 
+[![CI](https://github.com/developerpagadi/omnisnap-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/developerpagadi/omnisnap-mcp/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/omnisnap-mcp)](https://www.npmjs.com/package/omnisnap-mcp)
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-listed-5A4FCF)](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.developerpagadi%2Fomnisnap/versions/0.2.3)
+[![licence: MIT](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
+
 **Selectors that don't rot, and a page your agent can actually see.**
 
 Agents guess selectors from a DOM dump, and the test breaks next sprint. This
@@ -274,6 +279,17 @@ order of precedence.
 bridge module, unmodified, against a real server, so the two halves cannot
 drift apart unnoticed. It skips unless the extension is checked out beside this
 repository.
+
+## Contributing
+
+Bug reports and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md)
+covers the setup, the house style, and the one constraint worth knowing before
+you write anything: tools that let the agent act without a person in the loop
+will not be merged.
+
+Security problems should go through
+[private reporting](https://github.com/developerpagadi/omnisnap-mcp/security/advisories/new)
+rather than a public issue. See [SECURITY.md](SECURITY.md).
 
 ## Licence
 

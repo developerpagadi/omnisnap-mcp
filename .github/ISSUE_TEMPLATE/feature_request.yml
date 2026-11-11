@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a tool or a change
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Worth knowing before you write: almost every tool here reads. A few
+        change what is on screen. Exactly one can click or type, and only with
+        a person approving it in the page.
+
+        Proposals that let the agent act without a person in the loop will be
+        declined. That constraint is the product rather than an oversight, so
+        it is kinder to say so up front than after you have written it.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do that you cannot do now?
+      description: The problem, not the solution. It often has a cheaper answer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Which tier would it be in?
+      options:
+        - It reads, and changes nothing
+        - It changes what is on screen, not what the page contains
+        - It acts, and would need the user to approve
+        - Not sure
+    validations:
+      required: true

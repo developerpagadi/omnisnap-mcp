@@ -426,8 +426,8 @@ export const TOOLS = [
     description:
       'Proposes clicking an element or typing into a field. The extension outlines the element ' +
       'and asks the user to approve; nothing happens unless they do. ' +
-      'Use it to reach states that only exist after an interaction — an open menu, a validation ' +
-      'error, the next step of a form — which is where most defects are. ' +
+      'Use it to reach states that only exist after an interaction: an open menu, a validation ' +
+      'error, the next step of a form. That is where most defects are. ' +
       'The user may decline. If they do, do not retry: ask them what they want instead.',
     schema: {
       action: z.enum(['click', 'type']).describe('What to propose.'),
@@ -456,7 +456,8 @@ export const TOOLS = [
     title: 'Show the page at another width',
     description:
       'Holds the page at a phone, tablet or desktop width, and leaves it there. ' +
-      'Every tool afterwards — the numbered map, the accessibility audit, the measurements — ' +
+      'Every tool afterwards, including the numbered map, the accessibility audit and the ' +
+      'measurements, ' +
       'then answers about that width, which is how you find what is wrong at 375px rather than ' +
       'just noticing that something is. Call it with reset to give the page back. ' +
       'Chrome shows a debugging banner while this is held; that is Chrome, not the page.',
@@ -487,7 +488,7 @@ export const TOOLS = [
     title: 'Hover and photograph',
     description:
       'Puts the pointer on an element and returns a screenshot of what that reveals: dropdowns, ' +
-      'tooltips, hover styling. These states cannot be reached any other way — a synthetic event ' +
+      'tooltips, hover styling. These states cannot be reached any other way: a synthetic event ' +
       'fires the page handlers but leaves the CSS untouched, so this uses a real pointer move. ' +
       'Nothing is clicked.',
     schema: {

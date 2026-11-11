@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.2.3
+
+The repository is public, so the links that pointed nowhere now point
+somewhere: `repository` is back in `package.json`, and `server.json` carries
+it too, which is what directories read to find the README, the licence and the
+tool list.
+
+Project scaffolding for a public repository: SECURITY.md, CONTRIBUTING.md,
+issue and pull request templates, an editorconfig, and two workflows. CI runs
+the suite on Node 18 and 22, installs the packed tarball to prove it starts,
+and fails if `server.json` and `package.json` disagree about the version. The
+release workflow publishes with `--provenance`, so npm records which commit
+and which workflow built the tarball.
+
+Prose in the source was rewritten the same way the docs were. The selector and
+diagnostics guides are served to AI clients, so people read them.
+
+## 0.2.2
+
+Documentation only. The README, this changelog and PROTOCOL.md were rewritten
+for plainer prose. No change to behaviour.
+
+The comparison section is now headed "How this is different" rather than
+naming another project in the heading, and names Playwright MCP and Chrome
+DevTools MCP in the body as examples of the category. It also states plainly
+that connecting an agent to your real browser is not a unique idea, which is
+true and was previously implied otherwise.
+
 ## 0.2.1
 
 Added `mcpName` so the official MCP registry can verify npm ownership. No

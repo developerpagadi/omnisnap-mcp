@@ -2,12 +2,16 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.developerpagadi/omnisnap",
   "description": "Stability-scored test selectors, design tokens and captures from your real, logged-in browser.",
-  "version": "0.2.1",
+  "repository": {
+    "url": "https://github.com/developerpagadi/omnisnap-mcp",
+    "source": "github"
+  },
+  "version": "0.2.3",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "omnisnap-mcp",
-      "version": "0.2.1",
+      "version": "0.2.3",
       "transport": {
         "type": "stdio"
       }

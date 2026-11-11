@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 18 is the floor declared in engines. 22 is the current LTS, which is
+        # what most people will actually run it on.
+        node: ['18', '22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm test
+
+      # The published package is the source, so what matters is that the
+      # tarball installs and runs, not that the repository does.
+      - name: The packed tarball installs and starts
+        run: |
+          npm pack --pack-destination /tmp
+          mkdir /tmp/consumer && cd /tmp/consumer
+          npm init -y > /dev/null
+          npm install /tmp/omnisnap-mcp-*.tgz > /dev/null
+          ./node_modules/.bin/omnisnap-mcp --version
+
+      # A version in two places drifts the first time one is bumped and not
+      # the other, and the symptom is a server telling every client it is
+      # older than it is.
+      - name: server.json agrees with package.json
+        run: |
+          node -e '
+            const pkg = require("./package.json");
+            const srv = require("./server.json");
+            const fail = (m) => { console.error(m); process.exit(1); };
+            if (srv.name !== pkg.mcpName) fail("server.json name must equal package.json mcpName");
+            if (srv.version !== pkg.version) fail("server.json version must equal package.json version");
+            if (srv.packages[0].version !== pkg.version) fail("the npm package version in server.json is stale");
+            if (srv.packages[0].identifier !== pkg.name) fail("server.json names a different npm package");
+            console.log("server.json and package.json agree on " + pkg.version);
+          '

@@ -157,11 +157,127 @@ Asking costs one turn. Guessing wrong costs the task.
 
 </details>
 
+## What you can ask for
+
+Each of these is something you type. The agent picks the tools; you do not
+have to know their names.
+
+<table>
+<tr><td width="50%" valign="top">
+
+**"Write me a test for the checkout button."**
+
+Calls `annotate_interactive`, then `get_page_object`.
+
+You get a page object built from scored selectors, with any ambiguous one
+flagged before it reaches your suite.
+
+</td><td width="50%" valign="top">
+
+**Without this**, the agent reads the DOM, picks something that looks
+reasonable, and you find out it was positional three weeks later when the
+bundler runs.
+
+</td></tr>
+<tr><td valign="top">
+
+**"This button does nothing when I click it."**
+
+Calls `audit_page`.
+
+It asks what a click at that button would *actually* hit, and names whatever
+is painted over it.
+
+</td><td valign="top">
+
+**Without this**, the code looks correct, because it is. The consent banner
+and the button know nothing about each other; only the layout puts one on the
+other.
+
+</td></tr>
+<tr><td valign="top">
+
+**"Check this page at phone width."**
+
+`/check-responsive` walks all three widths, auditing each.
+
+You get what breaks at 375 and not at 1440, which is most of what breaks.
+
+</td><td valign="top">
+
+**Without this**, you resize your own window, squint, and miss the clipped
+text because it is below the fold at that width.
+
+</td></tr>
+<tr><td valign="top">
+
+**"Did my CSS change land?"**
+
+`diff_capture` before and after.
+
+The changed regions come back outlined on the newer frame.
+
+</td><td valign="top">
+
+**Without this**, two screenshots and your eyes. Most of the frame is
+identical, so you hunt.
+
+</td></tr>
+<tr><td valign="top">
+
+**"Why does this feel slow?"**
+
+`/why-is-this-slow` reads diagnostics, then watches for ten seconds.
+
+Measured in *your* session, with your extensions and your network.
+
+</td><td valign="top">
+
+**Without this**, a clean automated browser on a fast connection tells you
+everything is fine.
+
+</td></tr>
+<tr><td valign="top">
+
+**"Which button do you mean? This one."**
+
+`await_user_selection` arms the picker. You click it.
+
+The agent gets the element with ranked selectors.
+
+</td><td valign="top">
+
+**Without this**, three rounds of "the blue one, no, the other blue one".
+
+</td></tr>
+</table>
+
+### Slash commands
+
+| Command | What to type after it |
+| --- | --- |
+| `/write-test` | the framework, and the journey to cover |
+| `/file-bug` | what you expected and what happened |
+| `/check-responsive` | optionally, what to watch for |
+| `/find-flaky-selectors` | the selectors you already have, one per line |
+| `/why-is-this-slow` | nothing |
+| `/audit-accessibility` | nothing |
+| `/extract-design-system` | `json`, `css`, `tailwind`, `scss` or `markdown` |
+
+`/extract-design-system markdown` is worth singling out. It returns a dated
+`DESIGN.md` to commit beside the code, with the contrast audit inline, so the
+next question about spacing has an answer that does not need the browser
+again.
+
 ## The tools
 
-Twenty-two, in three tiers. The tier depends on who has to agree to it.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/developerpagadi/omnisnap-mcp/master/assets/tiers.png" alt="24 tools in three tiers: it reads, it moves the camera, it asks before it acts" width="880">
+</p>
 
-### 🟡 It reads
+Twenty-four, in three tiers. The tier depends on who has to agree to it.
+
+### It reads
 
 Nothing here changes your page.
 
@@ -175,12 +291,14 @@ Nothing here changes your page.
 | `capture_page` · `capture_element` · `capture_matrix` | Screenshots, including three widths side by side |
 | `get_diagnostics` | Vitals, failed requests, console errors, storage |
 | `watch_page` | Waits, then reports what the page did meanwhile |
+| `audit_page` | Problems only a rendered page has: a covered control, clipped text, sideways scroll, a font that never arrived |
+| `diff_capture` | What moved since the last time you looked, outlined |
 | `get_design_tokens` | Palette with contrast audit, type scale, spacing |
 | `measure_accessibility` | WCAG failures, with selectors |
 | `inspect_element` | Box model and computed styles |
 | `list_tabs` · `omnisnap_status` | What can be read, and whether the bridge is healthy |
 
-### ⚪ It moves the camera
+### It moves the camera
 
 These change what is on screen, not what the page contains. They are declared
 as changes rather than reads, so your client can prompt if it wants to.
@@ -192,7 +310,7 @@ as changes rather than reads, so your client can prompt if it wants to.
 | `set_color_scheme` | Light or dark. Dark is where contrast regressions hide, because it is the theme nobody screenshots |
 | `hover` · `focus_element` | Photograph a dropdown, a tooltip, a focus ring. No ordinary capture reaches these |
 
-### 🔴 It asks before it acts
+### It asks before it acts
 
 | Tool | |
 | --- | --- |
@@ -384,6 +502,20 @@ that let the agent act without a person in the loop will not be merged.
 Security problems should go through
 [private reporting](https://github.com/developerpagadi/omnisnap-mcp/security/advisories/new)
 rather than a public issue.
+
+## If it saved you an afternoon
+
+There is no paid tier, no account and nothing to upsell. No server to keep up
+and no API bill to meter, because everything runs on your own machine. It is
+built by one developer, and every feature stays free.
+
+If it saved you an afternoon, you can buy me a coffee.
+
+<a href="https://buymeacoffee.com/developerpagadi">
+  <img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-FFC900?style=for-the-badge&logo=buymeacoffee&logoColor=08090B&labelColor=08090B" alt="Buy me a coffee">
+</a>
+
+Entirely optional, and it opens buymeacoffee.com in a new tab.
 
 ## Licence
 

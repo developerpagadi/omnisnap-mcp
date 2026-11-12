@@ -20,7 +20,7 @@ import { join } from 'node:path';
 import { Bridge } from '../src/bridge/ws.js';
 import { log } from '../src/lib/logger.js';
 
-const EXPECTED = '1.10.0';
+const EXPECTED = '2.0.0';
 const OUT = process.argv[2] || '/tmp/omnisnap-verify';
 mkdirSync(OUT, { recursive: true });
 log.setLevel('silent');
@@ -181,6 +181,36 @@ if (dark) {
 const released = await attempt('reset', () => bridge.call('set_viewport', { reset: true }));
 check(released && released.emulating === false, 'the page was handed back at its real size');
 await bridge.call('set_color_scheme', { scheme: 'auto' }).catch(() => {});
+
+/* ── the newer tools ── */
+
+const design = await attempt('get_design_tokens markdown', () =>
+  bridge.call('get_design_tokens', { format: 'markdown' })
+);
+if (design) {
+  check(design.code.startsWith('# Design system'), 'markdown returns a committable document');
+  check(/Extracted from/.test(design.code), 'that records where it came from and when');
+}
+
+const audit = await attempt('audit_page', () => bridge.call('audit_page', {}));
+if (audit) {
+  check(Array.isArray(audit.issues), `audit_page ran, ${audit.issues.length} findings`);
+  check(!!audit.checked.coverage, 'and says how much of the page it could see');
+  const rules = [...new Set(audit.issues.map((i) => i.rule))];
+  if (rules.length) console.log(`    ${rules.join(', ')}`);
+  for (const issue of audit.issues.slice(0, 4)) {
+    console.log(`    ${issue.severity} ${issue.rule}: ${issue.message.slice(0, 80)}`);
+  }
+}
+
+const base = await attempt('diff_capture baseline', () => bridge.call('diff_capture', {}));
+if (base) check(base.baseline === true, 'diff_capture takes a baseline first');
+const again = await attempt('diff_capture compare', () => bridge.call('diff_capture', {}));
+if (again) {
+  check(again.baseline === undefined, 'and compares on the second call');
+  console.log(`    ${again.regions ? again.regions.length : 0} regions, ${again.changedPercent ?? 0}% of the frame`);
+  if (again.base64) save('diff.jpg', again.base64);
+}
 
 /* ── the page is left as it was found ── */
 

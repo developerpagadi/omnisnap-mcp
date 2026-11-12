@@ -1,5 +1,47 @@
 # Changelog
 
+## 0.4.0
+
+Requires OmniSnap AI Studio 1.10 or later.
+
+### `audit_page`: problems only a rendered page has
+
+Six checks that need a real browser, and that reading the source cannot find.
+The one that justifies the rest asks what a click on a control would actually
+hit, which is how you learn that a consent banner is sitting on the submit
+button. In the source those two components know nothing about each other and
+neither is wrong.
+
+Also: text cut off by its own container, a page that scrolls sideways, a
+webfont that was asked for and never arrived, images with nothing reserving
+their box, and text too small to read.
+
+Hit testing cannot see past the fold, so the report says how much of the page
+it could see rather than implying it checked all of it.
+
+### `diff_capture`: did the change land
+
+Call it, edit, call it again. The regions that moved come back outlined on the
+newer frame. Two screenshots answer this badly, because the eye has to hunt
+and most of the frame is identical.
+
+The baseline is per URL and held in memory only. One that outlived the session
+would quietly compare against yesterday, and nothing would say so.
+
+### A design system you can commit
+
+`get_design_tokens` takes `format: "markdown"` and returns a dated DESIGN.md
+with the contrast audit inline, for the repository rather than the
+conversation.
+
+### Three more slash commands
+
+`/check-responsive` walks phone, tablet and desktop and audits each, because
+most of what audit_page finds exists at one width only. `/find-flaky-selectors`
+checks the selectors you already have and offers scored replacements.
+`/why-is-this-slow` reads the diagnostics, then watches for ten seconds to
+catch what a snapshot on arrival cannot.
+
 ## 0.3.0
 
 ### `omnisnap_status` says when the extension is too old

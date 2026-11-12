@@ -340,7 +340,7 @@ export function createServer() {
     'extract-design-system',
     'Extract this page\'s design system',
     'Pulls the palette, type scale and spacing out of the live page.',
-    { format: z.string().describe('json, css, tailwind or scss.') },
+    { format: z.string().describe('json, css, tailwind, scss or markdown.') },
     ({ format }) => ({
       messages: [
         {
@@ -351,6 +351,83 @@ export function createServer() {
               `Call get_design_tokens with format "${format}" on the open tab, then present the result. ` +
               'Name each colour by the job it does in the interface rather than by its hue, and flag ' +
               'any pair that fails contrast.',
+          },
+        },
+      ],
+    })
+  );
+
+  prompt(
+    'check-responsive',
+    'Check this page at every width',
+    'Walks the page through phone, tablet and desktop, auditing each.',
+    { concern: z.string().optional().describe('Anything specific to watch for.') },
+    ({ concern }) => ({
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text:
+              'Check the open page at each width and report what breaks.\n\n' +
+              'For each of mobile, tablet and desktop: call set_viewport with that preset, then ' +
+              'audit_page, then capture_page with mode "viewport". Most of what audit_page finds ' +
+              'exists at one width only, so a clean desktop result says nothing about the phone.\n\n' +
+              'Call set_viewport with reset when you are done, so the user gets their page back.\n\n' +
+              'Report per width, worst first, and say plainly which widths were fine.' +
+              (concern ? `\n\nThe user is particularly concerned about: ${concern}` : ''),
+          },
+        },
+      ],
+    })
+  );
+
+  prompt(
+    'find-flaky-selectors',
+    'Find the selectors that will break',
+    'Checks existing selectors against the live page and scores replacements.',
+    { selectors: z.string().describe('The selectors to check, one per line or comma separated.') },
+    ({ selectors }) => ({
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text:
+              'Check these selectors against the open page and tell me which are a problem:\n\n' +
+              `${selectors}\n\n` +
+              'Call verify_selectors with all of them. Anything matching zero elements has already ' +
+              'broken. Anything matching more than one is ambiguous, which is the most common ' +
+              'cause of a flaky suite even while the test is passing.\n\n' +
+              'For each problem, call collect_selectors on what the author probably meant and ' +
+              'offer the highest-scoring replacement. Read omnisnap://guide/selectors first so ' +
+              'your explanation of why one is better matches how they were scored.',
+          },
+        },
+      ],
+    })
+  );
+
+  prompt(
+    'why-is-this-slow',
+    'Work out why this page is slow',
+    'Reads the real session\'s vitals, failed requests and layout shifts.',
+    {},
+    () => ({
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text:
+              'Work out why the open page feels slow.\n\n' +
+              'Call get_diagnostics for the timing, the failed and slow requests, and the DOM ' +
+              'shape. Then call watch_page for ten seconds to catch what happens after the page ' +
+              'has settled, which a snapshot taken on arrival cannot see.\n\n' +
+              'Read omnisnap://guide/diagnostics before interpreting any of it. Say which number ' +
+              'you are reasoning from for each conclusion, and say so plainly when a number is ' +
+              'missing rather than filling the gap: this is measured in the user\'s real session, ' +
+              'so a confident wrong diagnosis costs more than an honest gap.',
           },
         },
       ],

@@ -293,15 +293,57 @@ export const TOOLS = [
     description:
       'Extracts the design system the page actually uses: palette with contrast audit, type scale, ' +
       'radii, shadows and spacing. Use it to match a new component to an existing product, or to ' +
-      'find accessibility problems in the live UI.',
+      'find accessibility problems in the live UI. ' +
+      'Ask for "markdown" when the answer should outlive the conversation: it returns a design ' +
+      'document to commit beside the code, dated, because a snapshot with no date on it ' +
+      'eventually becomes a lie.',
     schema: {
       format: z
-        .enum(['json', 'css', 'tailwind', 'scss'])
+        .enum(['json', 'css', 'tailwind', 'scss', 'markdown'])
         .default('json')
-        .describe('Output shape. "css" emits custom properties.'),
+        .describe(
+          'Output shape. "css" emits custom properties, "markdown" a DESIGN.md the team can ' +
+            'commit so the next question about spacing does not need the browser again.'
+        ),
     },
     annotations: READS_THE_PAGE,
     render: (data) => (data.code ? text(data.code) : json(data)),
+  },
+
+  {
+    name: 'diff_capture',
+    title: 'What changed since last time',
+    description:
+      'Remembers the page as it is now, or, if it already has a baseline for this URL, returns ' +
+      'the regions that moved since then, outlined on the newer frame. ' +
+      'This is the loop to use when editing: call it once before your change, make the change, ' +
+      'then call it again. Two screenshots answer "did it land" badly, because the eye has to ' +
+      'hunt and most of the frame is identical. ' +
+      'The baseline is per URL and is forgotten when the browser idles, which is deliberate: one ' +
+      'that outlived the session would quietly compare against yesterday.',
+    schema: {
+      reset: z
+        .boolean()
+        .default(false)
+        .describe('Replace the baseline with the current page instead of comparing.'),
+    },
+    annotations: READS_THE_PAGE,
+    render: (data) => {
+      if (data.baseline || data.resized) return image(data, data.note);
+      if (!data.regions || !data.regions.length) return image(data, data.note);
+
+      const where = data.regions
+        .slice(0, 8)
+        .map((r) => `  ${r.width}x${r.height} at ${r.x},${r.y}`)
+        .join('\n');
+
+      return image(
+        data,
+        `${data.regions.length} region${data.regions.length === 1 ? '' : 's'} changed, ` +
+          `${data.changedPercent}% of the frame, ` +
+          `${data.secondsSinceBaseline}s after the baseline. Outlined in the image.\n\n${where}`
+      );
+    },
   },
 
   {

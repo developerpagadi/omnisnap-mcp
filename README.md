@@ -24,8 +24,8 @@ Here is a real nav bar, read through this server:
 ```
  1. home                 84/100  unique   a[aria-label="home"]
  8. Sign In              88/100  unique   #IN
- 2. Experience OneLern   44/100  unique   body.experience-body > div.navbar.w-nav
-                                          > nav.nav-menu > a.nav-link:nth-of-type(1)
+ 2. Product tour         44/100  unique   body > div.navbar > nav.menu
+                                          > a:nth-of-type(1)
 ```
 
 Eight links, two with a handle worth trusting and six with a positional chain
